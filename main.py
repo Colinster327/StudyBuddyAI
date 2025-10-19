@@ -5,6 +5,19 @@ import os
 from RealtimeSTT import AudioToTextRecorder
 from openai import OpenAI
 
+# ANSI Color codes for terminal output
+class Colors:
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    MAGENTA = '\033[95m'
+    CYAN = '\033[96m'
+    WHITE = '\033[97m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    END = '\033[0m'  # Reset to default
+
 # Suppress ALL warnings from the audio processing libraries
 warnings.filterwarnings("ignore")
 os.environ["PYTHONWARNINGS"] = "ignore"
@@ -48,12 +61,12 @@ def record_text() -> str:
 
     text = recorder.text()
     if not text or text.strip() == "":
-        print("No speech detected. Please try again.")
+        print(f"{Colors.RED}No speech detected. Please try again.{Colors.END}")
         print()
         return ""
 
     print()
-    print(f"You: '{text}'")
+    print(f"{Colors.CYAN}You:{Colors.END} {Colors.BOLD}'{text}'{Colors.END}")
     print()
     return text
 
@@ -69,21 +82,22 @@ def ask_openai(prompt: str):
     content = []
     stream = client.chat.completions.create(
         model="gpt-5",
+        reasoning_effort="minimal",
         messages=messages,
         stream=True
     )
 
-    print("Expert Response:-----------------------")
+    print(f"{Colors.GREEN}Expert Response:{Colors.END}{Colors.BOLD}-----------------------{Colors.END}")
     print()
     for chunk in stream:
         delta = chunk.choices[0].delta
         if delta.content:
             content.append(delta.content)
-            print(delta.content, end="", flush=True)
+            print(f"{Colors.WHITE}{delta.content}{Colors.END}", end="", flush=True)
 
     print()
     print()
-    print("---------------------------------------")
+    print(f"{Colors.BOLD}---------------------------------------{Colors.END}")
     print()
     full_response = "".join(content)
     messages.append({
@@ -94,10 +108,10 @@ def ask_openai(prompt: str):
 
 def main():
     print()
-    print("---------------------------------------")
-    print("StudyBuddyAI - Voice-Based, AI-Powered Study Assistant")
-    print("Press Ctrl+C to stop the program")
-    print("---------------------------------------")
+    print(f"{Colors.BOLD}{Colors.BLUE}---------------------------------------{Colors.END}")
+    print(f"{Colors.BOLD}{Colors.MAGENTA}StudyBuddyAI - Voice-Based, AI-Powered Study Assistant{Colors.END}")
+    print(f"{Colors.YELLOW}Press Ctrl+C to stop the program{Colors.END}")
+    print(f"{Colors.BOLD}{Colors.BLUE}---------------------------------------{Colors.END}")
     print()
 
     while True:
@@ -108,7 +122,7 @@ def main():
         except KeyboardInterrupt:
             print()
             print()
-            print("Thank you for using StudyBuddyAI! Goodbye!")
+            print(f"{Colors.GREEN}Thank you for using StudyBuddyAI! Goodbye!{Colors.END}")
             break
 
 
