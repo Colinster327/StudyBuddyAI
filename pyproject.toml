@@ -1,0 +1,11 @@
+[project]
+name = "StudyBuddyAI"
+version = "0.1.0"
+description = "A voice-based, AI-powered study assistant"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]>=1.18.0",
+    "openai>=2.5.0",
+    "realtimestt>=0.3.104",
+]
