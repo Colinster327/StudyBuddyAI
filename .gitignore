@@ -200,3 +200,8 @@ venv.bak/
 # Environment variables
 .env
 .env.local
+
+# StudyBuddyAI specific
+studybuddy.db
+studybuddy.db-journal
+profile_*.json

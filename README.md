@@ -1,6 +1,27 @@
 # StudyBuddyAI
 
-A voice-based study assistant that runs in the terminal and connects to an MCP (Model Context Protocol) server for all AI and tool interactions. The system aims to improve personalized learning experiences by dynamically adjusting flashcard difficulty, tracking weak topics, and providing feedback using a connected LLM.
+A voice-based, AI-powered study assistant featuring **advanced personalized learning** based on cutting-edge research in Intelligent Tutoring Systems.
+
+## ✨ New: Research-Backed Personalized Learning
+
+StudyBuddyAI now implements advanced features from two leading research papers:
+
+- **🧠 Student Modeling**: Tracks cognitive, affective, and learning style dimensions
+- **🎯 Adaptive Prompts**: Dynamically adjusts teaching based on your profile
+- **📈 Real-time Metrics**: Monitor knowledge and engagement levels
+- **🔄 Session Summaries**: AI-generated feedback after each study session
+- **💾 Progress Persistence**: SQLite database saves your learning profile between sessions
+- **🎓 Goal-Oriented Learning**: Maps your goals to specific skills and creates adaptive paths
+- **📊 Session History**: Tracks every session for trend analysis
+
+**See [PERSONALIZED_LEARNING.md](PERSONALIZED_LEARNING.md) for complete details.**  
+**See [SQLITE_DATABASE.md](SQLITE_DATABASE.md) for database documentation.**
+
+## Overview
+
+A terminal-based study assistant that provides personalized, adaptive tutoring experiences. The system dynamically adjusts to your learning style, tracks your progress across sessions, and provides intelligent feedback to optimize your studying.
+
+**🏗️ Modular Architecture**: The codebase is organized into focused modules for maintainability and extensibility. See [REFACTORING.md](REFACTORING.md) for details.
 
 ## Documentation
 
@@ -65,13 +86,73 @@ python main.py
 
 **How it works:**
 
-1. When prompted, press Enter to start recording your voice.
-2. Speak your question or task clearly into your microphone.
-3. Press Enter again to stop recording.
-4. StudyBuddyAI will transcribe your speech to text, send it to the AI, and display the assistant's response.
+1. **First Run**: System creates your personalized student profile
+2. **Profile Display**: See your knowledge level, session count, and mastered topics
+3. **Voice Recording**: Press Enter to start/stop recording your questions
+4. **AI Response**: Get personalized explanations adapted to your learning style
+5. **Real-time Metrics**: See your knowledge and engagement levels after each interaction
+6. **Session End**: Press `Ctrl+C` to get an AI-generated summary and save your progress
 
-You can repeat the process to ask multiple questions.  
-To exit the application at any time, press `Ctrl+C`.
+### What You'll See
+
+**On Startup:**
+```
+📊 Student Profile:
+   Knowledge Level: 65.0%
+   Sessions: 3
+   Total Questions: 15
+   Mastered: Process Management, System Calls
+```
+
+**During Study:**
+```
+📈 Learning Metrics: Knowledge: 75% | Engagement: 80%
+```
+
+**On Exit:**
+```
+📋 Generating Session Summary...
+[AI-powered analysis and recommendations]
+
+📊 Session Statistics
+Duration: 12.5 minutes
+Questions Answered: 8
+Session Accuracy: 75.0%
+✓ Progress saved! See you next time!
+```
 
 **Tip:**  
-If no speech is detected, you'll be prompted to try recording again.
+- The AI adapts its teaching style to match your learning preferences
+- Your progress is saved automatically when you exit with `Ctrl+C`
+- Each session builds on previous ones for continuous improvement
+
+## Data Storage
+
+Your learning profile is stored in a local SQLite database:
+
+**Location**: `studybuddy.db` (auto-created in the project directory)
+
+**Contains**:
+- Your complete student profile (cognitive, affective, learning style)
+- Session history and performance trends
+- Topic mastery and struggling areas
+- Learning goals and progress
+
+**Backup**:
+```bash
+# Simple file copy
+cp studybuddy.db studybuddy_backup.db
+```
+
+**Reset**:
+```bash
+# Delete database to start fresh
+rm studybuddy.db
+```
+
+**Migration from JSON** (if you have old `profile_*.json` files):
+```bash
+python migrate_json_to_sqlite.py
+```
+
+See [SQLITE_DATABASE.md](SQLITE_DATABASE.md) for complete database documentation.
