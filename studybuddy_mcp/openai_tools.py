@@ -132,13 +132,111 @@ def get_openai_tools_for_tutor() -> List[Dict[str, Any]]:
                     "required": ["student_id"]
                 }
             }
+        },
+        
+        # Flashcard Tools - Allow LLM to dynamically retrieve study material
+        {
+            "type": "function",
+            "function": {
+                "name": "list_flashcard_topics",
+                "description": "List all available topics in the flashcard database. Use this first to see what topics are available, then retrieve specific flashcards relevant to the student's needs. Also shows available flashcard sets.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "list_flashcard_sets",
+                "description": "List all available flashcard sets/collections (e.g., 'Operating Systems Midterm', 'Data Structures Final'). Shows count of flashcards in each set.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_flashcards",
+                "description": "Retrieve flashcards from the database. Can filter by topic and/or flashcard set. Returns flashcard IDs, questions, answers, topics, flashcard sets, and difficulty levels. Use this to get study material relevant to what the student is learning.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "topic": {
+                            "type": "string",
+                            "description": "Optional topic filter (e.g., 'processes', 'file systems')"
+                        },
+                        "flashcard_set": {
+                            "type": "string",
+                            "description": "Optional flashcard set filter (e.g., 'Operating Systems Midterm')"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "Maximum number of flashcards to return"
+                        }
+                    },
+                    "required": []
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "search_flashcards",
+                "description": "Search flashcards by keyword in questions, answers, and topics. Can optionally filter by flashcard set. Use this when the student asks about a specific concept or when you need flashcards related to a particular topic.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "search_term": {
+                            "type": "string",
+                            "description": "Keyword to search for (e.g., 'fork', 'system call', 'interrupt')"
+                        },
+                        "flashcard_set": {
+                            "type": "string",
+                            "description": "Optional flashcard set filter (e.g., 'Operating Systems Midterm')"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "Maximum number of results (default: 10)"
+                        }
+                    },
+                    "required": ["search_term"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "count_flashcards",
+                "description": "Get the total number of flashcards available in the database and list all topics and sets. Use this to understand the scope of available study material.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "flashcard_set": {
+                            "type": "string",
+                            "description": "Optional filter to count flashcards in a specific set"
+                        }
+                    },
+                    "required": []
+                }
+            }
         }
     ]
 
 
 def should_display_tool_call(tool_name: str) -> bool:
     """Determine if a tool call should be displayed to the user"""
-    # Don't display these routine tool calls
-    hidden_tools = {"update_learning_metrics"}
+    # Don't display these routine tool calls (they're internal/background operations)
+    hidden_tools = {
+        "update_learning_metrics",
+        "list_flashcard_topics",
+        "list_flashcard_sets",
+        "count_flashcards"
+    }
     return tool_name not in hidden_tools
 

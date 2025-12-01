@@ -129,8 +129,9 @@ def init():
     display_student_profile_from_dict(profile)
 
     # ===== Generate Personalized System Prompt via MCP =====
+    # Use dynamic flashcard retrieval (include_flashcards=False)
     prompt_result = generate_study_prompt(
-        mcp_client, student_id, include_flashcards=True)
+        mcp_client, student_id, include_flashcards=False)
 
     if not prompt_result.get("success"):
         print(
@@ -138,6 +139,7 @@ def init():
         return
 
     system_prompt = prompt_result.get("prompt", "")
+    print(f"{Colors.CYAN}Mode: {prompt_result.get('mode', 'unknown')}{Colors.END}")
 
     messages = [
         {
@@ -300,43 +302,63 @@ def ask_openai(prompt: str, first: bool = False, response_time: float = 0.0):
 
                 final_tool_calls[index].function.arguments += tool_call.function.arguments
 
+            if choice.finish_reason == "tool_calls":
+                # First, add the assistant message with tool_calls
+                tool_calls_list = list(final_tool_calls.values())
+                messages.append({
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": tc.id,
+                            "type": "function",
+                            "function": {
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments
+                            }
+                        }
+                        for tc in tool_calls_list
+                    ]
+                })
+                
+                # Then add the tool response messages
+                tool_results = handle_tool_calls(
+                    tool_calls_list,
+                    mcp_client,
+                    student_id
+                )
+                messages.extend(tool_results)
+
+                # Break inner loop to restart with new messages
+                break
+
             if delta.content:
                 content_parts.append(delta.content)
                 print(f"{Colors.WHITE}{delta.content}{Colors.END}",
                       end="", flush=True)
 
-            if choice.finish_reason == "tool_calls":
-                for tool_data in final_tool_calls.values():
-                    tool_results = handle_tool_calls(
-                        tool_data,
-                        mcp_client,
-                        student_id
-                    )
-                    messages.extend(tool_results)
-
-                # Continue loop to get final response
-                continue
-
+        # Only add assistant message if we have content (not just tool calls)
         full_content = "".join(content_parts).strip()
-        messages.append({
-            "role": "assistant",
-            "content": full_content
-        })
+        if full_content:
+            messages.append({
+                "role": "assistant",
+                "content": full_content
+            })
 
-        print()
-        print()
+            print()
+            print()
 
-        # Display learning metrics if available and not first message
-        if not first:
-            metrics_result = get_learning_metrics(mcp_client, student_id)
-            if metrics_result.get("success"):
-                metrics = metrics_result.get("metrics", {})
-                if metrics.get("total_answers", 0) > 0:
-                    display_learning_metrics_from_dict(metrics)
+            # Display learning metrics if available and not first message
+            if not first:
+                metrics_result = get_learning_metrics(mcp_client, student_id)
+                if metrics_result.get("success"):
+                    metrics = metrics_result.get("metrics", {})
+                    if metrics.get("total_answers", 0) > 0:
+                        display_learning_metrics_from_dict(metrics)
 
-        print(f"{Colors.BOLD}---------------------------------------{Colors.END}")
-        print()
-        break
+            print(f"{Colors.BOLD}---------------------------------------{Colors.END}")
+            print()
+            break
 
 
 # ============================================================================

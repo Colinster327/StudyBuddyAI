@@ -8,7 +8,7 @@ import os
 import json
 import sqlite3
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 from models import StudentModel, CognitiveModel, AffectiveModel, LearningStyleModel
 
 
@@ -98,6 +98,30 @@ def init_database():
             engagement_level REAL,
             FOREIGN KEY (student_id) REFERENCES student_profiles(student_id)
         )
+    """)
+    
+    # Create flashcards table for storing study material
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS flashcards (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            question TEXT NOT NULL,
+            answer TEXT NOT NULL,
+            topic TEXT,
+            flashcard_set TEXT,
+            difficulty REAL DEFAULT 0.5,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Create indexes for faster searches
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_flashcards_topic 
+        ON flashcards(topic)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_flashcards_set 
+        ON flashcards(flashcard_set)
     """)
     
     conn.commit()
@@ -310,4 +334,247 @@ def get_session_history(student_id: str, limit: int = 10) -> List[Dict]:
         })
     
     return history
+
+
+# ============================================================================
+# FLASHCARD MANAGEMENT
+# ============================================================================
+
+def import_flashcards_from_json(json_path: str, clear_existing: bool = False) -> int:
+    """
+    Import flashcards from a JSON file into the database.
+    
+    Args:
+        json_path: Path to JSON file containing flashcards
+        clear_existing: If True, clear existing flashcards before importing
+    
+    Returns:
+        Number of flashcards imported
+    """
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    try:
+        # Load flashcards from JSON
+        with open(json_path, 'r') as f:
+            flashcards = json.load(f)
+        
+        # Clear existing flashcards if requested
+        if clear_existing:
+            cursor.execute("DELETE FROM flashcards")
+            print(f"{Colors.YELLOW}Cleared existing flashcards{Colors.END}")
+        
+        # Insert flashcards
+        inserted = 0
+        for card in flashcards:
+            question = card.get('question', '')
+            answer = card.get('answer', '')
+            topic = card.get('topic', 'General')
+            flashcard_set = card.get('flashcard_set', 'Default')
+            difficulty = card.get('difficulty', 0.5)
+            
+            if not question or not answer:
+                continue
+            
+            cursor.execute("""
+                INSERT INTO flashcards (question, answer, topic, flashcard_set, difficulty, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (question, answer, topic, flashcard_set, difficulty, datetime.now().isoformat()))
+            inserted += 1
+        
+        conn.commit()
+        print(f"{Colors.GREEN}✓ Imported {inserted} flashcards from {json_path}{Colors.END}")
+        return inserted
+        
+    except Exception as e:
+        print(f"{Colors.RED}Error importing flashcards: {e}{Colors.END}")
+        conn.rollback()
+        return 0
+    finally:
+        conn.close()
+
+
+def get_all_flashcards(limit: Optional[int] = None, flashcard_set: Optional[str] = None) -> List[Dict]:
+    """Get all flashcards from database, optionally filtered by flashcard set"""
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    if flashcard_set:
+        query = "SELECT id, question, answer, topic, flashcard_set, difficulty FROM flashcards WHERE flashcard_set = ? ORDER BY id"
+        params = [flashcard_set]
+        if limit:
+            query += " LIMIT ?"
+            params.append(limit)
+        cursor.execute(query, params)
+    else:
+        query = "SELECT id, question, answer, topic, flashcard_set, difficulty FROM flashcards ORDER BY id"
+        if limit:
+            query += f" LIMIT {limit}"
+        cursor.execute(query)
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    flashcards = []
+    for row in rows:
+        flashcards.append({
+            "id": row[0],
+            "question": row[1],
+            "answer": row[2],
+            "topic": row[3] or "General",
+            "flashcard_set": row[4] or "Default",
+            "difficulty": row[5]
+        })
+    
+    return flashcards
+
+
+def get_flashcards_by_topic(topic: str, flashcard_set: Optional[str] = None) -> List[Dict]:
+    """Get flashcards filtered by topic, optionally within a specific flashcard set"""
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    if flashcard_set:
+        cursor.execute("""
+            SELECT id, question, answer, topic, flashcard_set, difficulty 
+            FROM flashcards 
+            WHERE topic LIKE ? AND flashcard_set = ?
+            ORDER BY id
+        """, (f"%{topic}%", flashcard_set))
+    else:
+        cursor.execute("""
+            SELECT id, question, answer, topic, flashcard_set, difficulty 
+            FROM flashcards 
+            WHERE topic LIKE ?
+            ORDER BY id
+        """, (f"%{topic}%",))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    flashcards = []
+    for row in rows:
+        flashcards.append({
+            "id": row[0],
+            "question": row[1],
+            "answer": row[2],
+            "topic": row[3] or "General",
+            "flashcard_set": row[4] or "Default",
+            "difficulty": row[5]
+        })
+    
+    return flashcards
+
+
+def get_flashcard_by_id(flashcard_id: int) -> Optional[Dict]:
+    """Get a specific flashcard by ID"""
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT id, question, answer, topic, flashcard_set, difficulty 
+        FROM flashcards 
+        WHERE id = ?
+    """, (flashcard_id,))
+    
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row:
+        return {
+            "id": row[0],
+            "question": row[1],
+            "answer": row[2],
+            "topic": row[3] or "General",
+            "flashcard_set": row[4] or "Default",
+            "difficulty": row[5]
+        }
+    return None
+
+
+def search_flashcards(search_term: str, limit: int = 10, flashcard_set: Optional[str] = None) -> List[Dict]:
+    """Search flashcards by keyword in question, answer, or topic, optionally within a specific flashcard set"""
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    if flashcard_set:
+        cursor.execute("""
+            SELECT id, question, answer, topic, flashcard_set, difficulty 
+            FROM flashcards 
+            WHERE (question LIKE ? OR answer LIKE ? OR topic LIKE ?) AND flashcard_set = ?
+            ORDER BY id
+            LIMIT ?
+        """, (f"%{search_term}%", f"%{search_term}%", f"%{search_term}%", flashcard_set, limit))
+    else:
+        cursor.execute("""
+            SELECT id, question, answer, topic, flashcard_set, difficulty 
+            FROM flashcards 
+            WHERE question LIKE ? OR answer LIKE ? OR topic LIKE ?
+            ORDER BY id
+            LIMIT ?
+        """, (f"%{search_term}%", f"%{search_term}%", f"%{search_term}%", limit))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    flashcards = []
+    for row in rows:
+        flashcards.append({
+            "id": row[0],
+            "question": row[1],
+            "answer": row[2],
+            "topic": row[3] or "General",
+            "flashcard_set": row[4] or "Default",
+            "difficulty": row[5]
+        })
+    
+    return flashcards
+
+
+def get_flashcard_topics() -> List[str]:
+    """Get list of unique topics in flashcard database"""
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT DISTINCT topic FROM flashcards WHERE topic IS NOT NULL ORDER BY topic")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return [row[0] for row in rows if row[0]]
+
+
+def count_flashcards(flashcard_set: Optional[str] = None) -> int:
+    """Get total number of flashcards in database, optionally filtered by flashcard set"""
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    if flashcard_set:
+        cursor.execute("SELECT COUNT(*) FROM flashcards WHERE flashcard_set = ?", (flashcard_set,))
+    else:
+        cursor.execute("SELECT COUNT(*) FROM flashcards")
+    
+    count = cursor.fetchone()[0]
+    conn.close()
+    
+    return count
+
+
+def get_flashcard_sets() -> List[str]:
+    """Get list of unique flashcard sets in database"""
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT DISTINCT flashcard_set FROM flashcards WHERE flashcard_set IS NOT NULL ORDER BY flashcard_set")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return [row[0] for row in rows if row[0]]
 

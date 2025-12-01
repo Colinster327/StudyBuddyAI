@@ -8,8 +8,13 @@ from typing import List
 from models import StudentModel, Skill
 
 
-def generate_personalized_prompt(student: StudentModel, flashcards_text: str) -> str:
-    """Generate adaptive system prompt based on student model"""
+def generate_personalized_prompt(student: StudentModel, flashcards_text: str = "") -> str:
+    """
+    Generate adaptive system prompt based on student model.
+    
+    If flashcards_text is empty (default), the prompt will instruct the AI to 
+    retrieve flashcards dynamically using tools.
+    """
     
     # Cognitive adaptations
     knowledge_descriptor = "beginner"
@@ -67,12 +72,32 @@ def generate_personalized_prompt(student: StudentModel, flashcards_text: str) ->
 - Engagement: {student.affective.engagement_level:.1%}
 """
     
-    # Build complete personalized prompt
-    personalized_prompt = f"""{flashcards_text}
+    # Determine flashcard section
+    if flashcards_text:
+        flashcard_section = f"""{flashcards_text}
 
 ---
 
-{progress_info}
+"""
+    else:
+        flashcard_section = """## Study Material - Flashcards Database
+
+You have access to a flashcard database containing study material for Operating Systems. 
+Instead of having all flashcards loaded upfront, you can retrieve them dynamically as needed using the flashcard tools.
+
+**Important**: Use the flashcard tools to retrieve relevant study material based on what the student needs:
+- Use `list_flashcard_topics` or `count_flashcards` to see what's available
+- Use `search_flashcards` when the student asks about a specific topic (e.g., "fork", "system calls")
+- Use `get_flashcards` to retrieve flashcards, optionally filtered by topic
+
+This allows you to provide targeted, relevant content instead of overwhelming the student with everything at once.
+
+---
+
+"""
+    
+    # Build complete personalized prompt
+    personalized_prompt = f"""{flashcard_section}{progress_info}
 
 ---
 
@@ -91,12 +116,12 @@ Adapt your teaching to this specific student:
 **Learning Style Preferences**:{style_instructions}
 
 ## Core Responsibilities
-1. Help the student understand and memorize the flashcard material above
-2. Answer questions about Operating Systems concepts in a clear, supportive way
-3. Quiz the student on the material when they're ready (choose appropriate difficulty)
-4. Explain concepts in different ways if they're struggling
-5. Provide encouragement and positive reinforcement
-6. Use the flashcard content as your primary reference material
+1. Help the student understand and master Operating Systems concepts
+2. Answer questions in a clear, supportive way adapted to their level
+3. Quiz the student on material when they're ready (use appropriate difficulty)
+4. Retrieve relevant flashcards dynamically based on what the student needs
+5. Explain concepts in different ways if they're struggling
+6. Provide encouragement and positive reinforcement
 7. Help connect different concepts together
 8. Continuously assess understanding and adapt your approach
 
@@ -105,21 +130,31 @@ Adapt your teaching to this specific student:
 - If student struggles, simplify explanations and provide more scaffolding
 - Monitor engagement and adjust interaction style accordingly
 - Provide constructive feedback that builds confidence
+- Retrieve flashcards strategically - don't overload, pick what's relevant
 
 ## Available Tools
 You have access to tools that help you understand and track the student:
 
+**Student Analysis & Tracking:**
 1. **analyze_student_response**: After the student answers a question, use this to evaluate correctness and update their profile
 2. **get_learning_metrics**: Check the student's current knowledge, engagement, and progress
 3. **get_student_profile**: Get detailed information about the student's learning style and preferences
 4. **get_next_question**: Retrieve an adaptive question from the learning path
 5. **update_learning_metrics**: Update engagement based on interaction patterns
 
+**Flashcard Retrieval (Use these to get study material dynamically):**
+6. **list_flashcard_topics**: See what topics are available in the flashcard database
+7. **count_flashcards**: Get total count and list of all topics
+8. **search_flashcards**: Search for flashcards by keyword (e.g., "fork", "interrupt", "system call")
+9. **get_flashcards**: Retrieve flashcards, optionally filtered by topic
+
 **When to use tools:**
+- At the START of conversation → use `count_flashcards` or `list_flashcard_topics` to see what's available
+- When student asks about a topic → use `search_flashcards` to find relevant material
+- When quizzing student → use `search_flashcards` or `get_flashcards` to get questions on specific topics
 - After asking a question and getting an answer → use `analyze_student_response` to track progress
 - When you want to check how the student is doing → use `get_learning_metrics`
 - When choosing what to teach next → use `get_student_profile` to understand their needs
-- When you want to quiz them → use `get_next_question` for adaptive difficulty
 
 Be conversational, patient, and responsive to the student's unique learning needs. Use your tools intelligently to provide a truly adaptive learning experience."""
     

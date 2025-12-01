@@ -1,0 +1,142 @@
+[
+  {
+    "question": "What is dual mode operation in an operating system?",
+    "answer": "It separates user mode and kernel mode, allowing the OS to protect system resources by restricting privileged instructions to kernel mode only.",
+    "topic": "OS Fundamentals",
+    "difficulty": 0.4,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "What is an interrupt?",
+    "answer": "A hardware signal that temporarily halts CPU execution to handle an event; control is transferred to an interrupt handler in the OS.",
+    "topic": "Interrupts and Signals",
+    "difficulty": 0.5,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "What is a system call?",
+    "answer": "A controlled entry point from user mode into the kernel to request OS services like file I/O, process creation, or memory management.",
+    "topic": "System Calls",
+    "difficulty": 0.4,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "What are signals in Unix/Linux?",
+    "answer": "Asynchronous notifications sent to processes to inform them of events (e.g., SIGINT for Ctrl+C, SIGCHLD when a child terminates).",
+    "topic": "Interrupts and Signals",
+    "difficulty": 0.5,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "What are the four parts of a process's address space?",
+    "answer": "Text (code), Data (global/static vars), Heap (dynamic memory), and Stack (function call frames and local vars).",
+    "topic": "Process Management",
+    "difficulty": 0.5,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "What does the fork() system call do?",
+    "answer": "It creates a new process by duplicating the calling process; the child gets a copy of the parent's address space.",
+    "topic": "Process Management",
+    "difficulty": 0.6,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "What does exec() do after a fork()?",
+    "answer": "It replaces the current process image with a new program, keeping the same PID and file descriptors.",
+    "topic": "Process Management",
+    "difficulty": 0.6,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "What is the difference between execl() and execv()?",
+    "answer": "execl() passes arguments as a variable-length list; execv() passes them as an array of strings.",
+    "topic": "Process Management",
+    "difficulty": 0.7,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "What are file descriptors?",
+    "answer": "Integer handles representing open files or I/O resources; by convention, 0=stdin, 1=stdout, 2=stderr.",
+    "topic": "File Systems",
+    "difficulty": 0.5,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "How does shell file redirection work?",
+    "answer": "It uses file descriptors to redirect standard input/output (e.g., `command > file` writes stdout to a file).",
+    "topic": "Shell Operations",
+    "difficulty": 0.6,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "What is a shell pipe and how does it work?",
+    "answer": "A pipe connects the stdout of one process to the stdin of another using the `pipe()` system call, enabling inter-process communication.",
+    "topic": "Shell Operations",
+    "difficulty": 0.7,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "What is the purpose of Lex/Flex?",
+    "answer": "They generate lexical analyzers that match input text to tokens based on regular expressions.",
+    "topic": "Compilation",
+    "difficulty": 0.6,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "What are regular expressions used for in Lex/Flex?",
+    "answer": "To define patterns of text that the lexical analyzer recognizes as tokens.",
+    "topic": "Compilation",
+    "difficulty": 0.5,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "What is YACC/Bison used for?",
+    "answer": "They generate parsers that analyze the syntax of token streams based on a grammar, often following Lex/Flex.",
+    "topic": "Compilation",
+    "difficulty": 0.6,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "How does compilation work conceptually?",
+    "answer": "It transforms source code into machine code in stages: preprocessing, compiling, assembling, and linking.",
+    "topic": "Compilation",
+    "difficulty": 0.5,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "How does the shell execute commands internally?",
+    "answer": "It parses user input, forks a new process, uses exec() to run the command, and waits for it to complete.",
+    "topic": "Shell Operations",
+    "difficulty": 0.7,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "What happens to file descriptors after a fork()?",
+    "answer": "They are inherited by the child process, meaning both parent and child can access the same open files.",
+    "topic": "Process Management",
+    "difficulty": 0.6,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "Which system calls are used for file access?",
+    "answer": "`open()`, `read()`, `write()`, `lseek()`, and `close()` \u2014 used for low-level file manipulation.",
+    "topic": "File Systems",
+    "difficulty": 0.5,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "What is the difference between user and kernel space?",
+    "answer": "User space runs regular applications with restricted privileges; kernel space has full hardware access for OS functions.",
+    "topic": "OS Fundamentals",
+    "difficulty": 0.4,
+    "flashcard_set": "Operating Systems Midterm"
+  },
+  {
+    "question": "What kind of synthesis problem might appear on the exam?",
+    "answer": "Combining concepts like fork(), exec(), pipes, and redirection to explain how a shell executes a command pipeline.",
+    "topic": "Shell Operations",
+    "difficulty": 0.8,
+    "flashcard_set": "Operating Systems Midterm"
+  }
+]

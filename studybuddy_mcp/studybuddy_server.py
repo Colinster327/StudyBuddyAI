@@ -25,7 +25,15 @@ from database import (
     load_student_profile,
     save_student_profile,
     save_session_history,
-    get_session_history
+    get_session_history,
+    import_flashcards_from_json,
+    get_all_flashcards,
+    get_flashcards_by_topic,
+    get_flashcard_by_id,
+    search_flashcards,
+    get_flashcard_topics,
+    count_flashcards,
+    get_flashcard_sets
 )
 from adaptive_learning import (
     generate_personalized_prompt,
@@ -360,6 +368,93 @@ async def list_tools() -> list[Tool]:
                 "required": ["student_id"]
             }
         ),
+        
+        # Flashcard Management Tools
+        Tool(
+            name="list_flashcard_topics",
+            description="List all available topics in the flashcard database. Use this to see what topics are available before querying specific flashcards.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        Tool(
+            name="list_flashcard_sets",
+            description="List all available flashcard sets (collections) in the database. Use this to see what flashcard sets are available (e.g., 'Operating Systems Midterm', 'Data Structures Final').",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_flashcards",
+            description="Retrieve flashcards from the database. Can filter by topic and/or flashcard set. Returns flashcard IDs, questions, answers, topics, flashcard sets, and difficulty levels.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "topic": {
+                        "type": "string",
+                        "description": "Optional topic filter (e.g., 'processes', 'file systems')"
+                    },
+                    "flashcard_set": {
+                        "type": "string",
+                        "description": "Optional flashcard set filter (e.g., 'Operating Systems Midterm')"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of flashcards to return"
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_flashcard_by_id",
+            description="Retrieve a specific flashcard by its ID.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "flashcard_id": {
+                        "type": "integer",
+                        "description": "The ID of the flashcard to retrieve"
+                    }
+                },
+                "required": ["flashcard_id"]
+            }
+        ),
+        Tool(
+            name="search_flashcards",
+            description="Search flashcards by keyword. Searches in questions, answers, and topics. Can optionally filter by flashcard set. Use this when you need to find flashcards related to specific concepts.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "search_term": {
+                        "type": "string",
+                        "description": "Keyword to search for in flashcards"
+                    },
+                    "flashcard_set": {
+                        "type": "string",
+                        "description": "Optional flashcard set filter (e.g., 'Operating Systems Midterm')"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results (default: 10)"
+                    }
+                },
+                "required": ["search_term"]
+            }
+        ),
+        Tool(
+            name="count_flashcards",
+            description="Get the total number of flashcards available in the database.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
     ]
 
 
@@ -544,7 +639,7 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
         # Adaptive Learning Tools
         elif name == "generate_study_prompt":
             student_id = arguments["student_id"]
-            include_flashcards = arguments.get("include_flashcards", True)
+            include_flashcards = arguments.get("include_flashcards", False)  # Default to False for dynamic retrieval
             
             if student_id not in student_cache:
                 student_cache[student_id] = load_student_profile(student_id)
@@ -553,19 +648,22 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
             
             flashcards_text = ""
             if include_flashcards:
+                # Legacy mode: load all flashcards into prompt (not recommended)
                 flashcards = load_flashcards()
                 flashcards_text = "# Study Material - Operating Systems Flashcards\n\n"
                 for i, card in enumerate(flashcards, 1):
                     flashcards_text += f"{i}. Q: {card['question']}\n"
                     flashcards_text += f"   A: {card['answer']}\n\n"
             
+            # Generate prompt (will include dynamic flashcard instructions if flashcards_text is empty)
             prompt = generate_personalized_prompt(student, flashcards_text)
             
             return [TextContent(
                 type="text",
                 text=json.dumps({
                     "success": True,
-                    "prompt": prompt
+                    "prompt": prompt,
+                    "mode": "dynamic_flashcards" if not include_flashcards else "static_flashcards"
                 }, indent=2)
             )]
         
@@ -708,6 +806,114 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
                         "mastered_topics": student.cognitive.mastered_topics,
                         "struggling_topics": student.cognitive.struggling_topics
                     }
+                }, indent=2)
+            )]
+        
+        # Flashcard Management Tools
+        elif name == "list_flashcard_topics":
+            topics = get_flashcard_topics()
+            total_count = count_flashcards()
+            flashcard_sets = get_flashcard_sets()
+            
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "success": True,
+                    "topics": topics,
+                    "flashcard_sets": flashcard_sets,
+                    "total_flashcards": total_count
+                }, indent=2)
+            )]
+        
+        elif name == "list_flashcard_sets":
+            flashcard_sets = get_flashcard_sets()
+            
+            # Get count for each set
+            set_counts = {}
+            for fs in flashcard_sets:
+                set_counts[fs] = count_flashcards(flashcard_set=fs)
+            
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "success": True,
+                    "flashcard_sets": flashcard_sets,
+                    "set_counts": set_counts,
+                    "total_sets": len(flashcard_sets)
+                }, indent=2)
+            )]
+        
+        elif name == "get_flashcards":
+            topic = arguments.get("topic")
+            flashcard_set = arguments.get("flashcard_set")
+            limit = arguments.get("limit")
+            
+            if topic:
+                flashcards = get_flashcards_by_topic(topic, flashcard_set=flashcard_set)
+            else:
+                flashcards = get_all_flashcards(limit=limit, flashcard_set=flashcard_set)
+            
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "success": True,
+                    "flashcards": flashcards,
+                    "count": len(flashcards)
+                }, indent=2)
+            )]
+        
+        elif name == "get_flashcard_by_id":
+            flashcard_id = arguments["flashcard_id"]
+            flashcard = get_flashcard_by_id(flashcard_id)
+            
+            if flashcard:
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": True,
+                        "flashcard": flashcard
+                    }, indent=2)
+                )]
+            else:
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": False,
+                        "error": f"Flashcard with ID {flashcard_id} not found"
+                    })
+                )]
+        
+        elif name == "search_flashcards":
+            search_term = arguments["search_term"]
+            flashcard_set = arguments.get("flashcard_set")
+            limit = arguments.get("limit", 10)
+            
+            flashcards = search_flashcards(search_term, limit=limit, flashcard_set=flashcard_set)
+            
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "success": True,
+                    "flashcards": flashcards,
+                    "count": len(flashcards),
+                    "search_term": search_term,
+                    "flashcard_set": flashcard_set
+                }, indent=2)
+            )]
+        
+        elif name == "count_flashcards":
+            flashcard_set = arguments.get("flashcard_set")
+            count = count_flashcards(flashcard_set=flashcard_set)
+            topics = get_flashcard_topics()
+            flashcard_sets = get_flashcard_sets()
+            
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "success": True,
+                    "total_flashcards": count,
+                    "topics": topics,
+                    "flashcard_sets": flashcard_sets
                 }, indent=2)
             )]
         
