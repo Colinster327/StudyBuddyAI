@@ -2,9 +2,21 @@
 
 A voice-based, AI-powered study assistant featuring **advanced personalized learning** based on cutting-edge research in Intelligent Tutoring Systems.
 
-## ✨ New: Research-Backed Personalized Learning
+## ✨ New: MCP-Based Modular Architecture
 
-StudyBuddyAI now implements advanced features from two leading research papers:
+StudyBuddyAI now uses the **Model Context Protocol (MCP)** for a clean, modular architecture:
+
+- **🏗️ MCP Server**: All business logic exposed via MCP tools and resources
+- **📡 Client-Server**: Clean separation between UI and logic
+- **🔧 Extensible**: Easy to add new tools and resources
+- **🧪 Testable**: Components can be tested independently
+- **🔌 Reusable**: Other applications can use the MCP server
+
+**See [MCP_ARCHITECTURE.md](MCP_ARCHITECTURE.md) for complete technical details.**
+
+## ✨ Research-Backed Personalized Learning
+
+StudyBuddyAI implements advanced features from two leading research papers:
 
 - **🧠 Student Modeling**: Tracks cognitive, affective, and learning style dimensions
 - **🎯 Adaptive Prompts**: Dynamically adjusts teaching based on your profile
@@ -21,10 +33,13 @@ StudyBuddyAI now implements advanced features from two leading research papers:
 
 A terminal-based study assistant that provides personalized, adaptive tutoring experiences. The system dynamically adjusts to your learning style, tracks your progress across sessions, and provides intelligent feedback to optimize your studying.
 
-**🏗️ Modular Architecture**: The codebase is organized into focused modules for maintainability and extensibility. See [REFACTORING.md](REFACTORING.md) for details.
+Built with a **modern MCP architecture** that separates concerns and enables extensibility.
 
 ## Documentation
 
+- [MCP Architecture](MCP_ARCHITECTURE.md) - Technical details on the MCP server and client
+- [Personalized Learning](PERSONALIZED_LEARNING.md) - Research-backed adaptive learning
+- [Database Documentation](SQLITE_DATABASE.md) - SQLite schema and operations
 - [Research Paper](https://www.overleaf.com/read/gpnszqrgppgr#b1dfb7)
 - [Project Proposal Powerpoint](https://catmailohio-my.sharepoint.com/:p:/g/personal/cm787623_ohio_edu/EYlEPXB2uktJgjjnw2LK7r0BDT82YZ8N86R4CIziF-S67Q?e=ub1vKG)
 
@@ -83,6 +98,8 @@ uv run main.py
 
 python main.py
 ```
+
+The MCP server will start automatically and handle all student modeling and adaptive learning logic.
 
 **How it works:**
 
