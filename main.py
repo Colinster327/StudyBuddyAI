@@ -25,6 +25,7 @@ from typing import Optional
 
 from RealtimeSTT import AudioToTextRecorder
 from openai import OpenAI
+import wandb
 
 # Import MCP client for modular architecture
 from studybuddy_mcp.client import (
@@ -78,6 +79,7 @@ messages = []
 mcp_client: Optional[MCPClient] = None
 student_id = "default"
 session_start_time = None
+wandb_run = None
 
 
 # ============================================================================
@@ -85,7 +87,7 @@ session_start_time = None
 # ============================================================================
 
 def init():
-    global recorder, client, messages, mcp_client, student_id, session_start_time
+    global recorder, client, messages, mcp_client, student_id, session_start_time, wandb_run
 
     print()
     print(f"{Colors.BOLD}{Colors.BLUE}Initializing StudyBuddyAI with Personalized Learning...{Colors.END}")
@@ -128,6 +130,33 @@ def init():
     # Display student profile summary
     display_student_profile_from_dict(profile)
 
+    # ===== Initialize Weights & Biases =====
+    print(f"{Colors.CYAN}Initializing Weights & Biases tracking...{Colors.END}")
+    cognitive = profile.get("cognitive", {})
+    
+    # Initialize wandb with student profile as config
+    wandb_run = wandb.init(
+        project="studybuddy-ai",
+        name=f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        config={
+            "student_id": student_id,
+            "learning_goals": ["Pass Operating Systems Exam"],
+            "initial_knowledge_level": cognitive.get('knowledge_level', 0),
+            "session_count": profile.get('session_count', 0),
+            "total_study_time": profile.get('total_study_time', 0)
+        },
+        tags=["study_session", "os_exam"]
+    )
+    
+    # Log initial student profile metrics
+    wandb.log({
+        "knowledge_level": cognitive.get('knowledge_level', 0),
+        "total_questions": cognitive.get('total_answers', 0),
+        "correct_answers": cognitive.get('correct_answers', 0),
+        "session_count": profile.get('session_count', 0),
+        "step": 0
+    })
+
     # ===== Generate Personalized System Prompt via MCP =====
     # Use dynamic flashcard retrieval (include_flashcards=False)
     prompt_result = generate_study_prompt(
@@ -150,6 +179,7 @@ def init():
 
     session_start_time = datetime.now()
     print(f"{Colors.GREEN}✓ MCP initialization complete{Colors.END}")
+    print(f"{Colors.GREEN}✓ W&B tracking initialized{Colors.END}")
     print()
 
 
@@ -355,6 +385,23 @@ def ask_openai(prompt: str, first: bool = False, response_time: float = 0.0):
                     metrics = metrics_result.get("metrics", {})
                     if metrics.get("total_answers", 0) > 0:
                         display_learning_metrics_from_dict(metrics)
+                        
+                        # Log metrics to wandb in real-time
+                        total_answers = metrics.get("total_answers", 0)
+                        correct_answers = metrics.get("correct_answers", 0)
+                        accuracy = correct_answers / total_answers if total_answers > 0 else 0
+                        
+                        wandb.log({
+                            "knowledge_level": metrics.get("knowledge_level", 0),
+                            "engagement_level": metrics.get("engagement_level", 0),
+                            "motivation_level": metrics.get("motivation_level", 0),
+                            "frustration_level": metrics.get("frustration_level", 0),
+                            "total_questions": total_answers,
+                            "correct_answers": correct_answers,
+                            "accuracy": accuracy,
+                            "session_duration_minutes": (datetime.now() - session_start_time).total_seconds() / 60,
+                            "step": total_answers
+                        })
 
             print(f"{Colors.BOLD}---------------------------------------{Colors.END}")
             print()
@@ -408,6 +455,12 @@ Keep it concise and actionable."""
         summary = response.choices[0].message.content
         print(f"{Colors.WHITE}{summary}{Colors.END}")
         print()
+        
+        # Log session summary to wandb
+        wandb.log({
+            "session_summary_text": wandb.Html(f"<pre>{summary}</pre>"),
+            "interaction_count": interaction_count
+        })
 
     except Exception as e:
         print(f"{Colors.YELLOW}Could not generate summary: {e}{Colors.END}")
@@ -462,6 +515,34 @@ def display_final_stats():
         print(
             f"{Colors.CYAN}Total Study Time:{Colors.END} {student_profile.total_study_time:.1f} minutes")
         print()
+        
+        # Log final session statistics to wandb
+        wandb.log({
+            "final/session_duration_minutes": session_duration,
+            "final/questions_answered": questions_answered,
+            "final/correct_answers": correct_answers,
+            "final/session_accuracy": accuracy,
+            "final/knowledge_level": knowledge_level,
+            "final/total_study_time": student_profile.total_study_time,
+            "final/session_count": student_profile.session_count,
+            "final/engagement_level": student_profile.affective.engagement_level,
+            "final/motivation_level": student_profile.affective.motivation_level,
+            "final/frustration_level": student_profile.affective.frustration_level
+        })
+        
+        # Create a summary table for wandb
+        summary_data = [
+            ["Metric", "Value"],
+            ["Session Duration (min)", f"{session_duration:.1f}"],
+            ["Questions Answered", str(questions_answered)],
+            ["Correct Answers", str(correct_answers)],
+            ["Session Accuracy", f"{accuracy:.1%}"],
+            ["Knowledge Level", f"{knowledge_level:.1%}"],
+            ["Total Study Time (min)", f"{student_profile.total_study_time:.1f}"],
+            ["Total Sessions", str(student_profile.session_count)]
+        ]
+        
+        wandb.log({"session_summary": wandb.Table(data=summary_data, columns=["Metric", "Value"])})
 
     except Exception as e:
         # Show minimal stats if database is unavailable
@@ -506,6 +587,11 @@ def main():
 
             # Display final statistics
             display_final_stats()
+
+            # Finish wandb run
+            print(f"{Colors.CYAN}Finalizing W&B session tracking...{Colors.END}")
+            wandb.finish()
+            print(f"{Colors.GREEN}✓ W&B run completed{Colors.END}")
 
             print()
             break

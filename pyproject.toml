@@ -8,4 +8,5 @@ dependencies = [
     "mcp[cli]>=1.18.0",
     "openai>=2.5.0",
     "realtimestt>=0.3.104",
+    "wandb>=0.18.0",
 ]

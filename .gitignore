@@ -205,3 +205,6 @@ venv.bak/
 studybuddy.db
 studybuddy.db-journal
 profile_*.json
+
+# Weights & Biases
+wandb/
