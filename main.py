@@ -7,10 +7,10 @@ learning experience.
 
 RESEARCH FOUNDATION:
 -------------------
-Paper 1: "Empowering Personalized Learning through a Conversation-based 
+Paper 1: "Empowering Personalized Learning through a Conversation-based
          Tutoring System with Student Modeling" (CHI 2024)
-         
-Paper 2: "LLM-powered Multi-agent Framework for Goal-oriented Learning 
+
+Paper 2: "LLM-powered Multi-agent Framework for Goal-oriented Learning
          in Intelligent Tutoring System (GenMentor)" (WWW 2025)
 
 For complete documentation, see PERSONALIZED_LEARNING.md
@@ -102,37 +102,41 @@ def init():
     # ===== Initialize MCP Client =====
     print(f"{Colors.CYAN}Starting MCP server...{Colors.END}")
     mcp_client = MCPClient()
-    
+
     # ===== Create/Load Student Profile via MCP =====
     result = create_student_profile(
-        mcp_client, 
+        mcp_client,
         student_id=student_id,
         learning_goals=["Pass Operating Systems Exam"]
     )
-    
+
     if not result.get("success"):
-        print(f"{Colors.RED}Error initializing profile: {result.get('error')}{Colors.END}")
+        print(
+            f"{Colors.RED}Error initializing profile: {result.get('error')}{Colors.END}")
         print()
         sys.exit(1)
-    
+
     profile = result.get("profile", {})
-    
+
     # ===== Start New Session via MCP =====
     session_result = start_session(mcp_client, student_id)
-    
+
     # ===== Initialize Learning Path via MCP =====
-    mcp_client.call_tool("initialize_learning_path", {"student_id": student_id})
-    
+    mcp_client.call_tool("initialize_learning_path",
+                         {"student_id": student_id})
+
     # Display student profile summary
     display_student_profile_from_dict(profile)
 
     # ===== Generate Personalized System Prompt via MCP =====
-    prompt_result = generate_study_prompt(mcp_client, student_id, include_flashcards=True)
-    
+    prompt_result = generate_study_prompt(
+        mcp_client, student_id, include_flashcards=True)
+
     if not prompt_result.get("success"):
-        print(f"{Colors.RED}Error generating prompt: {prompt_result.get('error')}{Colors.END}")
+        print(
+            f"{Colors.RED}Error generating prompt: {prompt_result.get('error')}{Colors.END}")
         return
-    
+
     system_prompt = prompt_result.get("prompt", "")
 
     messages = [
@@ -168,14 +172,17 @@ def display_learning_metrics_from_dict(metrics: dict):
     """Display learning metrics from metrics dictionary"""
     knowledge = metrics.get('knowledge_level', 0)
     engagement = metrics.get('engagement_level', 0)
-    
+
     # Color code based on levels
-    knowledge_color = Colors.GREEN if knowledge > 0.6 else (Colors.YELLOW if knowledge > 0.3 else Colors.RED)
-    engagement_color = Colors.GREEN if engagement > 0.6 else (Colors.YELLOW if engagement > 0.4 else Colors.RED)
-    
+    knowledge_color = Colors.GREEN if knowledge > 0.6 else (
+        Colors.YELLOW if knowledge > 0.3 else Colors.RED)
+    engagement_color = Colors.GREEN if engagement > 0.6 else (
+        Colors.YELLOW if engagement > 0.4 else Colors.RED)
+
     print()
     print(f"{Colors.CYAN}📈 Learning Metrics:{Colors.END} ", end="")
-    print(f"Knowledge: {knowledge_color}{knowledge:.0%}{Colors.END} | ", end="")
+    print(
+        f"Knowledge: {knowledge_color}{knowledge:.0%}{Colors.END} | ", end="")
     print(f"Engagement: {engagement_color}{engagement:.0%}{Colors.END}")
 
 
@@ -212,15 +219,15 @@ def record_text() -> tuple[str, float]:
 def handle_tool_calls(tool_calls, mcp_client, student_id):
     """Handle tool calls from OpenAI by executing corresponding MCP tools"""
     tool_results = []
-    
+
     for tool_call in tool_calls:
         tool_name = tool_call.function.name
         tool_args = json.loads(tool_call.function.arguments)
-        
+
         # Display tool call if appropriate
         if should_display_tool_call(tool_name):
             print(f"{Colors.CYAN}🔧 Using tool: {tool_name}{Colors.END}")
-        
+
         # Execute the MCP tool
         try:
             result = mcp_client.call_tool(tool_name, tool_args)
@@ -237,7 +244,7 @@ def handle_tool_calls(tool_calls, mcp_client, student_id):
                 "name": tool_name,
                 "content": json.dumps({"success": False, "error": str(e)})
             })
-    
+
     return tool_results
 
 
@@ -256,69 +263,80 @@ def ask_openai(prompt: str, first: bool = False, response_time: float = 0.0):
 
     # Get MCP tools for OpenAI
     tools = get_openai_tools_for_tutor()
-    
+
     # Call OpenAI with tools - allow multiple rounds of tool calling
     max_iterations = 5
     iteration = 0
-    
+
+    print()
+    print(
+        f"{Colors.GREEN}Study Buddy:{Colors.END}{Colors.BOLD}-------------------------{Colors.END}")
+    print()
+
     while iteration < max_iterations:
         iteration += 1
-        
+
         # Non-streaming call to handle tool calls properly
-        response = client.chat.completions.create(
+        stream = client.chat.completions.create(
             model="gpt-5",
             reasoning_effort="minimal",
             messages=messages,
             tools=tools,
-            tool_choice="auto"
+            tool_choice="auto",
+            stream=True
         )
-        
-        response_message = response.choices[0].message
-        
-        # Check if the model wants to call tools
-        if response_message.tool_calls:
-            # Add assistant's message with tool calls
-            messages.append(response_message)
-            
-            # Execute tool calls via MCP
-            tool_results = handle_tool_calls(
-                response_message.tool_calls,
-                mcp_client,
-                student_id
-            )
-            
-            # Add tool results to messages
-            messages.extend(tool_results)
-            
-            # Continue loop to get final response
-            continue
-        else:
-            # No more tool calls - display final response
-            content = response_message.content or ""
-            
-            print(f"{Colors.GREEN}Study Buddy:{Colors.END}{Colors.BOLD}-------------------------{Colors.END}")
-            print()
-            print(f"{Colors.WHITE}{content}{Colors.END}")
-            print()
-            print()
-            
-            # Add final response to messages
-            messages.append({
-                "role": "assistant",
-                "content": content
-            })
-            
-            # Display learning metrics if available and not first message
-            if not first:
-                metrics_result = get_learning_metrics(mcp_client, student_id)
-                if metrics_result.get("success"):
-                    metrics = metrics_result.get("metrics", {})
-                    if metrics.get("total_answers", 0) > 0:
-                        display_learning_metrics_from_dict(metrics)
-            
-            print(f"{Colors.BOLD}---------------------------------------{Colors.END}")
-            print()
-            break
+        content_parts = []
+        final_tool_calls = {}
+
+        for chunk in stream:
+            choice = chunk.choices[0]
+            delta = choice.delta
+
+            for tool_call in delta.tool_calls or []:
+                index = tool_call.index
+
+                if index not in final_tool_calls:
+                    final_tool_calls[index] = tool_call
+
+                final_tool_calls[index].function.arguments += tool_call.function.arguments
+
+            if delta.content:
+                content_parts.append(delta.content)
+                print(f"{Colors.WHITE}{delta.content}{Colors.END}",
+                      end="", flush=True)
+
+            if choice.finish_reason == "tool_calls":
+                for tool_data in final_tool_calls.values():
+                    tool_results = handle_tool_calls(
+                        tool_data,
+                        mcp_client,
+                        student_id
+                    )
+                    messages.extend(tool_results)
+
+                # Continue loop to get final response
+                continue
+
+        full_content = "".join(content_parts).strip()
+        messages.append({
+            "role": "assistant",
+            "content": full_content
+        })
+
+        print()
+        print()
+
+        # Display learning metrics if available and not first message
+        if not first:
+            metrics_result = get_learning_metrics(mcp_client, student_id)
+            if metrics_result.get("success"):
+                metrics = metrics_result.get("metrics", {})
+                if metrics.get("total_answers", 0) > 0:
+                    display_learning_metrics_from_dict(metrics)
+
+        print(f"{Colors.BOLD}---------------------------------------{Colors.END}")
+        print()
+        break
 
 
 # ============================================================================
@@ -328,11 +346,11 @@ def ask_openai(prompt: str, first: bool = False, response_time: float = 0.0):
 def generate_and_display_session_summary():
     """Generate session summary using AI directly - no MCP dependency (Paper 1: Feedback Loop)"""
     global client, messages
-    
+
     # Count interactions from conversation history
     # Skip system message, count user/assistant pairs
     interaction_count = sum(1 for msg in messages if msg["role"] == "user")
-    
+
     if interaction_count == 0:
         return
 
@@ -383,24 +401,26 @@ def display_final_stats():
     try:
         # Load student profile directly from database
         student_profile = load_student_profile(student_id)
-        
+
         # Calculate session duration
-        session_duration = (datetime.now() - session_start_time).total_seconds() / 60
-        
+        session_duration = (
+            datetime.now() - session_start_time).total_seconds() / 60
+
         # Get cognitive metrics
         cognitive = student_profile.cognitive
         questions_answered = cognitive.total_answers
         correct_answers = cognitive.correct_answers
         knowledge_level = cognitive.knowledge_level
-        
+
         # Calculate session accuracy
-        accuracy = correct_answers / max(questions_answered, 1) if questions_answered > 0 else 0
-        
+        accuracy = correct_answers / \
+            max(questions_answered, 1) if questions_answered > 0 else 0
+
         # Update and save student profile
         student_profile.total_study_time += session_duration
         student_profile.last_session = datetime.now().isoformat()
         save_student_profile(student_profile)
-        
+
         # Save session history
         save_session_history(
             student_profile,
@@ -417,13 +437,15 @@ def display_final_stats():
         if questions_answered > 0:
             print(f"{Colors.CYAN}Session Accuracy:{Colors.END} {accuracy:.1%}")
         print(f"{Colors.CYAN}Overall Knowledge:{Colors.END} {knowledge_level:.1%}")
-        print(f"{Colors.CYAN}Total Study Time:{Colors.END} {student_profile.total_study_time:.1f} minutes")
+        print(
+            f"{Colors.CYAN}Total Study Time:{Colors.END} {student_profile.total_study_time:.1f} minutes")
         print()
-    
+
     except Exception as e:
         # Show minimal stats if database is unavailable
         print(f"{Colors.BOLD}{Colors.MAGENTA}📊 Session Statistics{Colors.END}")
-        session_duration = (datetime.now() - session_start_time).total_seconds() / 60
+        session_duration = (
+            datetime.now() - session_start_time).total_seconds() / 60
         print(f"{Colors.CYAN}Duration:{Colors.END} {session_duration:.1f} minutes")
         print(f"{Colors.YELLOW}(Error loading detailed stats: {e}){Colors.END}")
         print()
