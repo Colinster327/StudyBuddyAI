@@ -1,0 +1,142 @@
+[
+  {
+    "question": "What is the optimal cache replacement algorithm and why is it optimal?",
+    "answer": "The optimal algorithm (MIN) replaces the cache entry that will not be used for the longest time in the future, proven optimal by exchange arguments showing any earlier eviction increases misses. :contentReference[oaicite:1]{index=1}",
+    "topic": "Caching & Virtual Memory",
+    "difficulty": 0.5,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "Why can’t operating systems use MIN as the page replacement algorithm?",
+    "answer": "MIN requires knowledge of future memory references, which is impossible at runtime, so OSes use approximations like LRU, LFU, FIFO, or Clock. :contentReference[oaicite:2]{index=2}",
+    "topic": "Caching & Virtual Memory",
+    "difficulty": 0.4,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "How does Least Recently Used (LRU) approximate MIN?",
+    "answer": "LRU replaces the page that has not been used for the longest time in the past, using history as a predictor of future behavior. :contentReference[oaicite:3]{index=3}",
+    "topic": "Caching & Virtual Memory",
+    "difficulty": 0.3,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "What is Belady’s Anomaly?",
+    "answer": "Belady’s Anomaly is the phenomenon where increasing the number of page frames in FIFO can *increase* the number of page faults. :contentReference[oaicite:4]{index=4}",
+    "topic": "Virtual Memory",
+    "difficulty": 0.5,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "What are the three main delays in spinning disk access?",
+    "answer": "Seek time, rotational delay, and transfer time. :contentReference[oaicite:5]{index=5}",
+    "topic": "Storage Devices",
+    "difficulty": 0.3,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "Why are dirty bits important in virtual memory systems?",
+    "answer": "Dirty bits indicate whether a page has been modified. If set, the OS must write the page back to disk before eviction; otherwise it can be discarded without writing. :contentReference[oaicite:6]{index=6}",
+    "topic": "Virtual Memory",
+    "difficulty": 0.4,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "What does the backing store (swapspace) represent in virtual memory?",
+    "answer": "Backing store holds pages that are not currently in physical memory. It is required for demand paging and storing evicted dirty pages. :contentReference[oaicite:7]{index=7}",
+    "topic": "Virtual Memory",
+    "difficulty": 0.4,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "What is a critical section?",
+    "answer": "A critical section is a portion of code where shared data is accessed and must not be concurrently executed by multiple threads to prevent race conditions. :contentReference[oaicite:8]{index=8}",
+    "topic": "Synchronization",
+    "difficulty": 0.3,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "What are the two operations of a semaphore and what do they do?",
+    "answer": "P() waits until the semaphore’s value is >0, then decrements it atomically. V() increments the semaphore’s value and wakes a waiting process if necessary. :contentReference[oaicite:9]{index=9}",
+    "topic": "Synchronization",
+    "difficulty": 0.2,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "How does the semaphore-based bounded buffer solution prevent race conditions?",
+    "answer": "It uses three semaphores: mutex (mutual exclusion), emptySlots (counts empty buffer slots), and fullSlots (counts occupied slots). These ensure correct producer/consumer coordination. :contentReference[oaicite:10]{index=10}",
+    "topic": "Synchronization",
+    "difficulty": 0.4,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "Which Unix filesystem structure does stat() access?",
+    "answer": "stat() accesses the file's inode, which contains metadata such as type, size, owner, and block listings. :contentReference[oaicite:11]{index=11}",
+    "topic": "File Systems",
+    "difficulty": 0.4,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "Which Unix filesystem structure does readdir() access?",
+    "answer": "readdir() accesses a directory’s data block, which contains filename-to-inode mappings. :contentReference[oaicite:12]{index=12}",
+    "topic": "File Systems",
+    "difficulty": 0.4,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "Can two hard links to the same file have different owners? Why or why not?",
+    "answer": "No. Hard links share the same inode, so all metadata— including owner—must be identical. :contentReference[oaicite:13]{index=13}",
+    "topic": "File Systems",
+    "difficulty": 0.5,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "Can two symbolic links to a file have different owners?",
+    "answer": "Yes. Symlinks are independent files with their own inodes, so each link can have different ownership. :contentReference[oaicite:14]{index=14}",
+    "topic": "File Systems",
+    "difficulty": 0.5,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "Why is wear leveling important in SSDs?",
+    "answer": "SSDs deteriorate with writes; wear leveling evens out write cycles across cells to increase device lifetime. :contentReference[oaicite:15]{index=15}",
+    "topic": "Storage Devices",
+    "difficulty": 0.3,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "What system calls must you fully understand for the final exam according to the review?",
+    "answer": "open(), read(), write(), close(), lseek(), fork(), execv(), dup2(), chdir(), and stat(). :contentReference[oaicite:16]{index=16}",
+    "topic": "System Calls",
+    "difficulty": 0.3,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "Why is the PATH environment variable important for a shell?",
+    "answer": "PATH tells the shell where to search for executable programs when running commands, enabling command lookup without specifying full paths. :contentReference[oaicite:17]{index=17}",
+    "topic": "Shell",
+    "difficulty": 0.2,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "What does DFS-style recursion allow in a file search tool (like the Find project)?",
+    "answer": "It allows visiting every file and directory in a hierarchical structure, enabling complete directory traversal. :contentReference[oaicite:18]{index=18}",
+    "topic": "File Systems",
+    "difficulty": 0.4,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "What virtual memory question type is heavily represented on the final?",
+    "answer": "Running page reference strings through FIFO, LRU, and MIN and counting page faults, writes to disk, and disk retrievals. :contentReference[oaicite:19]{index=19}",
+    "topic": "Virtual Memory",
+    "difficulty": 0.6,
+    "flashcard_set": "Operating Systems Final"
+  },
+  {
+    "question": "What information is stored in a file's inode?",
+    "answer": "File size, file type, block listings, owner, and permissions. Filename is NOT in the inode. :contentReference[oaicite:20]{index=20}",
+    "topic": "File Systems",
+    "difficulty": 0.4,
+    "flashcard_set": "Operating Systems Final"
+  }
+]
