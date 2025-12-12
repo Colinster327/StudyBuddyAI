@@ -42,6 +42,7 @@ Built with a **modern MCP architecture** that separates concerns and enables ext
 - [Database Documentation](SQLITE_DATABASE.md) - SQLite schema and operations
 - [Research Paper](https://www.overleaf.com/read/gpnszqrgppgr#b1dfb7)
 - [Project Proposal Powerpoint](https://catmailohio-my.sharepoint.com/:p:/g/personal/cm787623_ohio_edu/EYlEPXB2uktJgjjnw2LK7r0BDT82YZ8N86R4CIziF-S67Q?e=ub1vKG)
+- [Demo Video](https://catmailohio-my.sharepoint.com/:v:/g/personal/cm787623_ohio_edu/IQB2Ognxv8EpSI3RkH1CWJRlAQAhA-hGcmiBdbR_yo3Igww?e=OxgfyU)
 
 ## Installation
 
